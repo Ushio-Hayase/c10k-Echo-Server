@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="$PROJECT_DIR$/DirectXBase" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/LinkedList" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Tetris-WinAPI" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/WindowAPI-MessageRoop" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/WindowAPI-Timer" vcs="Git" />
+  </component>
+</project>

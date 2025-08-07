@@ -1,0 +1,11 @@
+{
+    "files.associations": {
+        "*.cuh": "cuda-cpp",
+        "*.cu": "cuda-cpp",
+        "iosfwd": "cpp",
+        "iostream": "cpp",
+        "string": "cpp",
+        "format": "cpp",
+        "ostream": "cpp"
+    }
+}

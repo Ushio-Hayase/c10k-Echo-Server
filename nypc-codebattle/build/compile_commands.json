@@ -1,0 +1,8 @@
+[
+{
+  "directory": "D:/_Study/nypc-codebattle/build",
+  "command": "C:\\msys64\\ucrt64\\bin\\g++.exe   -g -o CMakeFiles\\nypc.dir\\main.cpp.obj -c D:\\_Study\\nypc-codebattle\\main.cpp",
+  "file": "D:/_Study/nypc-codebattle/main.cpp",
+  "output": "CMakeFiles/nypc.dir/main.cpp.obj"
+}
+]

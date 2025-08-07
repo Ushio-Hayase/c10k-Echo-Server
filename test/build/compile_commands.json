@@ -1,0 +1,8 @@
+[
+{
+  "directory": "D:/_Study/test/build",
+  "command": "C:\\LLVM\\bin\\clang++.exe -O0 -g -Xclang -gcodeview -D_DEBUG -D_DLL -D_MT -Xclang --dependent-lib=msvcrtd -o CMakeFiles\\test.dir\\main.cpp.obj -c D:\\_Study\\test\\main.cpp",
+  "file": "D:\\_Study\\test\\main.cpp",
+  "output": "CMakeFiles\\test.dir\\main.cpp.obj"
+}
+]
