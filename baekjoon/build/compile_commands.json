@@ -1,8 +1,0 @@
-[
-{
-  "directory": "D:/_Study/baekjoon/build",
-  "command": "C:\\msys64\\ucrt64\\bin\\g++.exe   -g -o CMakeFiles\\baekjoon.dir\\가운데를_말해요.cpp.obj -c D:\\_Study\\baekjoon\\가운데를_말해요.cpp",
-  "file": "D:/_Study/baekjoon/가운데를_말해요.cpp",
-  "output": "CMakeFiles/baekjoon.dir/가운데를_말해요.cpp.obj"
-}
-]

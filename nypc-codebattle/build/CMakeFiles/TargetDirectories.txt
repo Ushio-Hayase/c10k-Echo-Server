@@ -1,3 +1,0 @@
-D:/_Study/nypc-codebattle/build/CMakeFiles/nypc.dir
-D:/_Study/nypc-codebattle/build/CMakeFiles/edit_cache.dir
-D:/_Study/nypc-codebattle/build/CMakeFiles/rebuild_cache.dir
