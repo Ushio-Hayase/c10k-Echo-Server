@@ -29,9 +29,16 @@ void worker()
         int sock = socket(AF_INET, SOCK_STREAM, 0);
         if (sock == -1) std::cerr << "socket creating error" << std::endl;
 
-        int bind_res =
-            bind(sock, (sockaddr *)&server_addr, sizeof(server_addr));
+        sockaddr_in client_addr;
+        client_addr.sin_addr.s_addr = 0;
+        client_addr.sin_family = AF_INET;
+        client_addr.sin_port = htons(connection_count + 100);
+
+        int bind_res = bind(sock, (sockaddr *)&server_addr, sizeof(sockaddr));
         if (bind_res == -1) std::cerr << "binding error" << std::endl;
+
+        int con_res = connect(sock, (sockaddr *)&server_addr, sizeof(sockaddr));
+        if (con_res == -1) std::cerr << "connecting error" << std::endl;
 
         ++connection_count;
 
@@ -50,7 +57,7 @@ void worker()
 
 int main()
 {
-    std::vector<std::thread> thread_pool;
+    std::vector<std::thread> thread_pool(THREAD_COUNT);
 
     for (int i = 0; i < thread_pool.size(); ++i)
         thread_pool[i] = std::thread(worker);
@@ -63,6 +70,9 @@ int main()
     {
         auto end = clock();
         if (end - start / (double)CLOCKS_PER_SEC > 1)
+        {
             std::cout << connection_count << std::endl;
+            end = start;
+        }
     }
 }
