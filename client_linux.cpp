@@ -1,58 +1,68 @@
 #include <netinet/in.h>
 #include <sys/epoll.h>
 #include <sys/socket.h>
+#include <unistd.h>
 
 #include <atomic>
 #include <cstring>
 #include <iostream>
+#include <thread>
+#include <vector>
 
+constexpr int BUF_SIZE = 1024;
 constexpr int MAX_EVENTS = 128;
+constexpr int THREAD_COUNT = 17;
 
 std::atomic<int> connection_count{0};
 epoll_event events[MAX_EVENTS];
+sockaddr_in server_addr{AF_INET, htons(8888), 0};
 
-int main()
+void worker()
 {
-    // epoll 인스턴스
-    int epoll_fd = epoll_create1(0);
-    if (epoll_fd == -1) std::cerr << "epoll creating error" << std::endl;
+    std::string str = "Hello,World!";
+    char buf[BUF_SIZE];
 
-    int listen_sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (listen_sock == -1) std::cerr << "socket creating error" << std::endl;
-
-    sockaddr_in server_addr;
-
-    memset(&server_addr, sizeof(server_addr), 0);
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_port = 8888;
-    server_addr.sin_addr.s_addr = 0;
-
-    // 감시할 epoll event 종류
-    epoll_event ev;
-
-    ev.events = EPOLLIN;
-    ev.data.fd = listen_sock;
-
-    if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, listen_sock, &ev) == -1)
-        std::cerr << "registing epoll event error" << std::endl;
+    for (int i = 0; i < str.size(); ++i) buf[i] = str[i];
 
     while (true)
     {
-        int wait = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
-        if (wait == -1) std::cerr << "waiting epoll error" << std::endl;
+        int sock = socket(AF_INET, SOCK_STREAM, 0);
+        if (sock == -1) std::cerr << "socket creating error" << std::endl;
 
-        for (int i = 0; i < wait; ++i)
-        {
-            if (events[i].data.fd == listen_sock)
-            {
-                socklen_t size = sizeof(sockaddr_in);
-                int client_sock =
-                    accept(listen_sock, (sockaddr*)&server_addr, &size);
+        int bind_res =
+            bind(sock, (sockaddr *)&server_addr, sizeof(server_addr));
+        if (bind_res == -1) std::cerr << "binding error" << std::endl;
 
-                ev.events = EPOLLIN;
-                ev.data.fd = client_sock;
-                epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_sock, &ev);
-            }
-        }
+        ++connection_count;
+
+        int res = send(sock, buf, BUF_SIZE, 0);
+        if (res == -1) std::cerr << "sending error" << std::endl;
+
+        char recv_buf[BUF_SIZE];
+
+        int recv_res = recv(sock, recv_buf, BUF_SIZE, 0);
+        if (recv_res == -1) std::cerr << "recving error" << std::endl;
+        close(sock);
+
+        --connection_count;
+    }
+}
+
+int main()
+{
+    std::vector<std::thread> thread_pool;
+
+    for (int i = 0; i < thread_pool.size(); ++i)
+        thread_pool[i] = std::thread(worker);
+
+    for (int i = 0; i < thread_pool.size(); ++i) thread_pool[i].detach();
+
+    auto start = clock();
+
+    while (true)
+    {
+        auto end = clock();
+        if (end - start / (double)CLOCKS_PER_SEC > 1)
+            std::cout << connection_count << std::endl;
     }
 }
