@@ -1,4 +1,4 @@
-#include <netinet/in.h>
+#include <arpa/inet.h>
 #include <sys/epoll.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -6,6 +6,8 @@
 #include <atomic>
 #include <cstring>
 #include <iostream>
+#include <mutex>
+#include <queue>
 #include <thread>
 #include <vector>
 
@@ -15,12 +17,13 @@ constexpr int THREAD_COUNT = 17;
 
 std::atomic<int> connection_count{0};
 epoll_event events[MAX_EVENTS];
-sockaddr_in server_addr{AF_INET, htons(8888), 0};
+sockaddr_in server_addr;
 
 void worker()
 {
     std::string str = "Hello,World!";
     char buf[BUF_SIZE];
+    std::fill(buf, buf + BUF_SIZE, '\0');
 
     for (int i = 0; i < str.size(); ++i) buf[i] = str[i];
 
@@ -28,14 +31,6 @@ void worker()
     {
         int sock = socket(AF_INET, SOCK_STREAM, 0);
         if (sock == -1) std::cerr << "socket creating error" << std::endl;
-
-        sockaddr_in client_addr;
-        client_addr.sin_addr.s_addr = 0;
-        client_addr.sin_family = AF_INET;
-        client_addr.sin_port = htons(connection_count + 100);
-
-        int bind_res = bind(sock, (sockaddr *)&server_addr, sizeof(sockaddr));
-        if (bind_res == -1) std::cerr << "binding error" << std::endl;
 
         int con_res = connect(sock, (sockaddr *)&server_addr, sizeof(sockaddr));
         if (con_res == -1) std::cerr << "connecting error" << std::endl;
@@ -49,6 +44,7 @@ void worker()
 
         int recv_res = recv(sock, recv_buf, BUF_SIZE, 0);
         if (recv_res == -1) std::cerr << "recving error" << std::endl;
+
         close(sock);
 
         --connection_count;
@@ -57,22 +53,27 @@ void worker()
 
 int main()
 {
-    std::vector<std::thread> thread_pool(THREAD_COUNT);
+    std::vector<std::thread> thread_pool;
 
-    for (int i = 0; i < thread_pool.size(); ++i)
-        thread_pool[i] = std::thread(worker);
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(8888);
 
-    for (int i = 0; i < thread_pool.size(); ++i) thread_pool[i].detach();
+    if (inet_pton(AF_INET, "127.0.0.1", &server_addr.sin_addr) <= 0)
+    {
+        std::cerr << "\nInvalid address/ Address not supported \n";
+    }
 
-    auto start = clock();
+    for (int i = 0; i < THREAD_COUNT; ++i) thread_pool.emplace_back(worker);
+
+    clock_t start = clock();
 
     while (true)
     {
-        auto end = clock();
-        if (end - start / (double)CLOCKS_PER_SEC > 1)
+        clock_t end = clock();
+        if ((end - start) / (double)CLOCKS_PER_SEC > 1)
         {
-            std::cout << connection_count << std::endl;
-            end = start;
+            std::cerr << connection_count << std::endl;
+            start = end;
         }
     }
 }
