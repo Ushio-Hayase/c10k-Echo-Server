@@ -25,7 +25,7 @@ void worker(int epoll_fd, int listen_sock)
 
         for (int i = 0; i < ev_cnt; ++i)
         {
-            if (ev[i].data.fd == listen_sock && ev[i].events & EPOLLIN)
+            if (ev[i].data.fd == listen_sock)
             {
                 sockaddr_in client_addr;
 
@@ -47,11 +47,14 @@ void worker(int epoll_fd, int listen_sock)
                 {
                     int send_bytes = send(acpt_sock, buf, BUF_SIZE, 0);
                     if (send_bytes == -1)
-                        std::cerr << "data sending error" << std::endl;
+                        std::cerr << "data sending error: " << strerror(errno)
+                                  << std::endl;
                 }
                 else if (recv_bytes == -1)
-                    std::cerr << "data recving error" << std::endl;
+                    std::cerr << "data recving error: " << strerror(errno)
+                              << std::endl;
 
+                close(acpt_sock);
                 epoll_ctl(epoll_fd, EPOLL_CTL_DEL, acpt_sock, nullptr);
             }
         }
