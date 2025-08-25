@@ -38,7 +38,7 @@ void worker(int epoll_fd, int listen_sock)
 
                 epoll_ctl(epoll_fd, EPOLL_CTL_ADD, acpt_sock, &cur_ev);
             }
-            else
+            else if (ev[i].events & EPOLLIN)
             {
                 int acpt_sock = ev[i].data.fd;
                 char buf[BUF_SIZE];
@@ -92,7 +92,7 @@ int main()
 
     while (true)
     {
-        int ev_cnt = epoll_wait(epoll_fd, ev, EVENT_SIZE, -1);
+        ev_cnt = epoll_wait(epoll_fd, ev, EVENT_SIZE, -1);
         if (i >= ev_cnt) i = 0;
     }
 }
