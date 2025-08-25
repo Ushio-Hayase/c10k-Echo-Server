@@ -43,12 +43,14 @@ void worker(int epoll_fd, int listen_sock)
                 int acpt_sock = ev[i].data.fd;
                 char buf[BUF_SIZE];
                 int recv_bytes = recv(acpt_sock, buf, BUF_SIZE, 0);
-                if (recv_bytes == -1)
+                if (recv_bytes > 0)
+                {
+                    int send_bytes = send(acpt_sock, buf, BUF_SIZE, 0);
+                    if (send_bytes == -1)
+                        std::cerr << "data sending error" << std::endl;
+                }
+                else if (recv_bytes == -1)
                     std::cerr << "data recving error" << std::endl;
-
-                int send_bytes = send(acpt_sock, buf, BUF_SIZE, 0);
-                if (send_bytes == -1)
-                    std::cerr << "data sending error" << std::endl;
 
                 close(acpt_sock);
                 epoll_ctl(epoll_fd, EPOLL_CTL_DEL, acpt_sock, nullptr);
