@@ -7,26 +7,25 @@
 #include <chrono>
 #include <cstring>
 #include <iostream>
-#include <queue>
+#include <mutex>
 #include <thread>
 #include <vector>
 
 constexpr int BUF_SIZE = 1024;
-constexpr int MAX_EVENTS = 128;
-constexpr int THREAD_COUNT = 17;
+constexpr int MAX_EVENTS = 1024;
+constexpr int THREAD_COUNT = 8;
 constexpr int MAX_CONNECT = 12000;
 
 std::atomic<int> connection_count{0};
-std::atomic<int> event_counter{0};
 int epoll_fd;
 
 sockaddr_in server_addr;
 
-void worker()
+void worker_create()
 {
     std::string str = "Hello,World!";
     char buf[BUF_SIZE];
-    std::fill(buf, buf + BUF_SIZE, '\0');
+    std::fill(buf, buf + BUF_SIZE, 0);
 
     for (int i = 0; i < str.size(); ++i) buf[i] = str[i];
 
@@ -49,6 +48,7 @@ void worker()
             {
                 std::cerr << "connecting error" << std::endl;
                 close(sock);
+                --connection_count;
                 continue;
             }
 
@@ -57,6 +57,7 @@ void worker()
             {
                 std::cerr << "sending error" << std::endl;
                 close(sock);
+                --connection_count;
                 continue;
             }
 
@@ -66,18 +67,21 @@ void worker()
 
             epoll_ctl(epoll_fd, EPOLL_CTL_ADD, sock, &ev);
         }
+    }
+}
 
-        epoll_event events[MAX_EVENTS];
-        int ev_cnt = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
-
-        for (int event_counter = 0; event_counter < ev_cnt; ++event_counter)
-        {
-            epoll_event events[MAX_EVENTS];
-            if (events[event_counter].events & EPOLLIN)
+void worker_recv()
+{
+    while (true)
+    {
+        epoll_event ev[MAX_EVENTS];
+        int ev_cnt = epoll_wait(epoll_fd, ev, MAX_EVENTS, -1);
+        for (int i = 0; i < ev_cnt; ++i)
+            if (ev[i].events & EPOLLIN)
             {
                 char recv_buf[BUF_SIZE];
 
-                int sock = events[event_counter].data.fd;
+                int sock = ev[i].data.fd;
 
                 int recv_res = recv(sock, recv_buf, BUF_SIZE, 0);
                 if (recv_res == -1) std::cerr << "recving error" << std::endl;
@@ -88,7 +92,6 @@ void worker()
 
                 --connection_count;
             }
-        }
     }
 }
 
@@ -106,7 +109,11 @@ int main()
 
     epoll_fd = epoll_create1(0);
 
-    for (int i = 0; i < THREAD_COUNT; ++i) thread_pool.emplace_back(worker);
+    for (int i = 0; i < THREAD_COUNT; ++i)
+    {
+        thread_pool.emplace_back(worker_create);
+        thread_pool.emplace_back(worker_recv);
+    }
 
     auto start = std::chrono::system_clock::now();
 

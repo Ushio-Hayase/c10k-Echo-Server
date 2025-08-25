@@ -52,7 +52,6 @@ void worker(int epoll_fd, int listen_sock)
                 else if (recv_bytes == -1)
                     std::cerr << "data recving error" << std::endl;
 
-                close(acpt_sock);
                 epoll_ctl(epoll_fd, EPOLL_CTL_DEL, acpt_sock, nullptr);
             }
         }
@@ -84,7 +83,7 @@ int main()
 
     epoll_event listen_ev;
     listen_ev.data.fd = listen_sock;
-    listen_ev.events = EPOLLIN | EPOLLEXCLUSIVE;
+    listen_ev.events = EPOLLIN;
 
     int ep_res = epoll_ctl(epoll_fd, EPOLL_CTL_ADD, listen_sock, &listen_ev);
     if (ep_res == -1) std::cerr << "epoll registing error" << std::endl;
