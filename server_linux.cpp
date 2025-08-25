@@ -34,7 +34,7 @@ void worker(int epoll_fd, int listen_sock)
 
                 epoll_event cur_ev;
                 cur_ev.data.fd = acpt_sock;
-                cur_ev.events = EPOLLIN;
+                cur_ev.events = EPOLLIN | EPOLLONESHOT | EPOLLET;
 
                 epoll_ctl(epoll_fd, EPOLL_CTL_ADD, acpt_sock, &cur_ev);
             }
@@ -50,12 +50,15 @@ void worker(int epoll_fd, int listen_sock)
                         std::cerr << "data sending error: " << strerror(errno)
                                   << std::endl;
                 }
-                else if (recv_bytes == -1)
-                    std::cerr << "data recving error: " << strerror(errno)
-                              << std::endl;
+                else
+                {
+                    if (recv_bytes == -1)
+                        std::cerr << "data recving error: " << strerror(errno)
+                                  << std::endl;
 
-                close(acpt_sock);
-                epoll_ctl(epoll_fd, EPOLL_CTL_DEL, acpt_sock, nullptr);
+                    close(acpt_sock);
+                    epoll_ctl(epoll_fd, EPOLL_CTL_DEL, acpt_sock, nullptr);
+                }
             }
         }
     }
