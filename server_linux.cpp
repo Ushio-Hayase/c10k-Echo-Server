@@ -15,15 +15,15 @@ constexpr int THREAD_COUNT = 17;
 
 sockaddr_in server_addr;
 socklen_t sock_len = sizeof(sockaddr);
-std::atomic<int> i{0};
-int ev_cnt;
-epoll_event ev[EVENT_SIZE];
 
 void worker(int epoll_fd, int listen_sock)
 {
     while (true)
     {
-        for (; i < ev_cnt; ++i)
+        epoll_event ev[EVENT_SIZE];
+        int ev_cnt = epoll_wait(epoll_fd, ev, EVENT_SIZE, -1);
+
+        for (int i = 0; i < ev_cnt; ++i)
         {
             if (ev[i].data.fd == listen_sock && ev[i].events & EPOLLIN)
             {
@@ -82,7 +82,7 @@ int main()
 
     epoll_event listen_ev;
     listen_ev.data.fd = listen_sock;
-    listen_ev.events = EPOLLIN;
+    listen_ev.events = EPOLLIN | EPOLLEXCLUSIVE;
 
     int ep_res = epoll_ctl(epoll_fd, EPOLL_CTL_ADD, listen_sock, &listen_ev);
     if (ep_res == -1) std::cerr << "epoll registing error" << std::endl;
@@ -90,9 +90,5 @@ int main()
     for (int i = 0; i < THREAD_COUNT; ++i)
         thread_pool.emplace_back(worker, epoll_fd, listen_sock);
 
-    while (true)
-    {
-        ev_cnt = epoll_wait(epoll_fd, ev, EVENT_SIZE, -1);
-        if (i >= ev_cnt) i = 0;
-    }
+    for (int i = 0; i < THREAD_COUNT; ++i) thread_pool[i].join();
 }

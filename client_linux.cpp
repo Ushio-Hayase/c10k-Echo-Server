@@ -18,8 +18,8 @@ constexpr int MAX_CONNECT = 12000;
 
 std::atomic<int> connection_count{0};
 std::atomic<int> event_counter{0};
-int ev_cnt, epoll_fd;
-epoll_event events[MAX_EVENTS];
+int epoll_fd;
+
 sockaddr_in server_addr;
 
 void worker()
@@ -32,25 +32,6 @@ void worker()
 
     while (true)
     {
-        for (; event_counter < ev_cnt; ++event_counter)
-        {
-            if (events[event_counter].events & EPOLLIN)
-            {
-                char recv_buf[BUF_SIZE];
-
-                int sock = events[event_counter].data.fd;
-
-                int recv_res = recv(sock, recv_buf, BUF_SIZE, 0);
-                if (recv_res == -1) std::cerr << "recving error" << std::endl;
-
-                close(sock);
-
-                epoll_ctl(epoll_fd, EPOLL_CTL_DEL, sock, nullptr);
-
-                --connection_count;
-            }
-        }
-
         if (connection_count < MAX_CONNECT)
         {
             int sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -85,6 +66,29 @@ void worker()
 
             epoll_ctl(epoll_fd, EPOLL_CTL_ADD, sock, &ev);
         }
+
+        epoll_event events[MAX_EVENTS];
+        int ev_cnt = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
+
+        for (int event_counter = 0; event_counter < ev_cnt; ++event_counter)
+        {
+            epoll_event events[MAX_EVENTS];
+            if (events[event_counter].events & EPOLLIN)
+            {
+                char recv_buf[BUF_SIZE];
+
+                int sock = events[event_counter].data.fd;
+
+                int recv_res = recv(sock, recv_buf, BUF_SIZE, 0);
+                if (recv_res == -1) std::cerr << "recving error" << std::endl;
+
+                close(sock);
+
+                epoll_ctl(epoll_fd, EPOLL_CTL_DEL, sock, nullptr);
+
+                --connection_count;
+            }
+        }
     }
 }
 
@@ -113,11 +117,6 @@ int main()
         {
             std::cerr << connection_count << std::endl;
             start = end;
-        }
-        if (event_counter > MAX_EVENTS)
-        {
-            ev_cnt = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
-            event_counter = 0;
         }
     }
 }
